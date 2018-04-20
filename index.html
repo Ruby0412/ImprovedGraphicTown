@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<!-- Graphics town framework code by Mike Gleicher
+  -- written October, 2015
+  -->
+<head>
+    <meta charset="UTF-8">
+    <title>Rich Neighborhood</title>
+</head>
+<body>
+<!-- load this stuff first -->
+<script src="Libraries/twgl-full.js"></script>
+<script src="Libraries/panel.js"></script>
+<script src="Libraries/arcball.js"></script>
+<script src="grobject.js"></script>
+<script src="ExampleObjects/ground.js"></script>
+
+<!-- This is where we load the objects for the world -->
+<script src="ExampleObjects/simplest.js"></script>
+<script src="ExampleObjects/texturedplane.js"></script>
+<script src="ExampleObjects/textureplane2.js"></script>
+    <script src="ExampleObjects/textureplane3.js"></script>
+    
+<script src="ExampleObjects/cube.js"></script>
+<script src="ExampleObjects/cube2.js"></script>
+    <script src="ExampleObjects/cube3.js"></script>
+    <script src="ExampleObjects/cube4.js"></script>
+<script src="ExampleObjects/house.js"></script>
+
+<!-- I am adding the helicopter -->
+<script src="Helicopter/helicopter.js"></script>
+
+<!-- This gets loaded LAST (actually, it probably doesn't have to) -->
+<script src="graphicstown.js"></script>
+</body>
+
+<!-- all of the shaders get stuck here in the HTML because
+  -- that's the only way I know to load them without either
+  -- sticking them in JavaScript strings, or using a web server
+  -->
+
+<script id="cube-vs" type="notjs">
+// specialized shader for the simple cube
+// we assume that the model matrix works as the normal
+//      matrix - this only is try if the model matrix
+//      it a rotate/translate
+//      (uniform scale is OK since we re-normalize)
+// color is solid
+// simple lighting
+    precision highp float;
+
+    attribute vec3 vpos;
+    attribute vec3 vnormal;
+    varying vec3 fnormal;
+    varying vec3 fposition;
+    varying vec3 testdir;
+
+    uniform mat4 view;
+    uniform mat4 proj;
+    uniform mat4 model;
+    uniform vec3 lightdir;
+    uniform vec3 cubecolor;
+
+
+    void main(void) {
+        vec4 pos = model * vec4(vpos, 1.0);
+        fposition = pos.xyz;
+        gl_Position = proj * view * model * vec4(vpos, 1.0);
+        fnormal = vnormal;
+        testdir = vec3(0,1,0);
+        //vec4 normal = normalize(model * vec4(vnormal,0.0));
+        //float diffuse = 1 + .5*abs(dot(normal, vec4(lightdir,0.0)));
+        //outColor = cubecolor * diffuse;
+    }
+</script>
+<script id="cube-fs" type="notjs">
+// simple shader that does vertex coloring
+//  (e.g. the vertex shader figures the lighting
+// note this is used for more than just the cube
+    precision highp float;
+    varying vec3 fnormal;
+    varying vec3 fposition;
+    varying vec3 testdir;
+    uniform vec3 lightdir;
+    uniform vec3 cubecolor;
+    
+
+    void main(void) {
+        vec3 h = normalize(-fposition - fposition + lightdir);
+        vec3 ambient = 0.5*cubecolor;
+        vec3 diffuse = cubecolor*(0.5*max(dot(lightdir,fnormal),0.0));
+        vec3 specular = 1.0*vec3(1,1,1)*pow(max(dot(h,fnormal),0.0),64.0);
+        gl_FragColor = vec4(diffuse+specular+ambient, 1.0);
+    }
+</script>
+<!-- Special Ground Plane Shader - makes a boring
+  -- checkerboard
+  -->
+<script id="ground-vs" type="not-js">
+    precision highp float;
+
+    attribute vec3 vpos;
+    varying vec3 outPos;
+
+    uniform mat4 view;
+    uniform mat4 proj;
+
+    void main(void) {
+        gl_Position = proj * view * vec4(vpos, 1.0);
+        outPos = vpos;
+    }
+</script>
+<script id="ground-fs" type="notjs">
+    // note this is used for more than just the cube
+    precision highp float;
+    varying vec3 outPos;
+    void main(void) {
+        float xs = step(1.0,mod(outPos.x,2.0));
+        float zs = step(1.0,mod(outPos.z,2.0));
+        float ss = (xs>.5) ? zs : 1.0-zs;
+        gl_FragColor = mix(vec4(0,0,0,1),
+                           vec4(1,1,1,1),
+                           ss
+                           );
+
+    }
+</script>
+    <script id = "dt-vs" type = "not-js">
+    
+    </script>
+
+</html>
